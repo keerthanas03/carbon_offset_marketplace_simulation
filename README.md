@@ -2,6 +2,11 @@
 
 A full-stack web application for calculating carbon footprints and exploring carbon offset solutions, powered by AI assistance.
 
+## 🌐 Live Demo
+
+- **Frontend**: https://carbon-offset-marketplace-simulatio.vercel.app/
+- **Backend API**: https://carbon-offset-marketplace-simulation.onrender.com
+
 ## 🌱 Features
 
 - **Carbon Footprint Calculator**: Calculate emissions from electricity usage and transportation
