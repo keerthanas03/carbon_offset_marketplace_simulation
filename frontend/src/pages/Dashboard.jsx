@@ -228,8 +228,10 @@ const Dashboard = () => {
                 setEmissionsData(emissionsRes.data);
                 setLoading(false);
             } catch (err) {
-                console.error(err);
-                setError('Unable to fetch live data.');
+                console.error('❌ Dashboard Error:', err);
+                console.error('Error details:', err.response?.data || err.message);
+                const errorMsg = err.response?.data?.error || err.message || 'Unable to fetch live data.';
+                setError(`Unable to fetch live data. ${errorMsg}`);
                 setLoading(false);
             }
         };
