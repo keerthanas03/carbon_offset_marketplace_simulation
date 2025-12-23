@@ -242,6 +242,22 @@ const Dashboard = () => {
         downloadCSV(emissionsData, 'carbon_emissions_data.csv');
     };
 
+    const handleImport = (newData) => {
+        // Update emissions data
+        setEmissionsData(newData);
+
+        // Recalculate summary totals
+        const totalEmissions = newData.reduce((sum, r) => sum + Number(r.co2_emission || 0), 0);
+        const totalOffsets = newData.reduce((sum, r) => sum + Number(r.credits_needed || 0), 0);
+        const netCarbon = newData.reduce((sum, r) => sum + Number(r.offset_cost || 0), 0);
+
+        setSummary({
+            totalEmissions,
+            totalOffsets,
+            netCarbon
+        });
+    };
+
     if (loading) return <div style={{ textAlign: 'center', padding: '4rem' }}>Loading analytics...</div>;
     if (error) return <div style={{ color: 'red', textAlign: 'center', padding: '4rem' }}>{error}</div>;
 
@@ -688,7 +704,11 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <ImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
+            <ImportModal
+                isOpen={isImportOpen}
+                onClose={() => setIsImportOpen(false)}
+                onImport={handleImport}
+            />
         </div>
     );
 };

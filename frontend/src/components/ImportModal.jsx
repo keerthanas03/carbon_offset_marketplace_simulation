@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { IoCloudUploadOutline, IoCheckmarkCircleOutline, IoClose } from 'react-icons/io5';
 
-const ImportModal = ({ isOpen, onClose }) => {
-    const [status, setStatus] = useState('idle'); // idle, uploading, success
+const ImportModal = ({ isOpen, onClose, onImport }) => {
+    const [status, setStatus] = useState('idle'); // idle, uploading, success, error
+    const [errorMessage, setErrorMessage] = useState('');
 
     if (!isOpen) return null;
 
@@ -15,16 +16,64 @@ const ImportModal = ({ isOpen, onClose }) => {
 
     const handleUpload = (file) => {
         setStatus('uploading');
-        console.log("Uploading file:", file.name);
-        // Simulate processing
-        setTimeout(() => {
-            setStatus('success');
-            // Close after showing success
-            setTimeout(() => {
-                setStatus('idle');
-                onClose();
-            }, 1500);
-        }, 2000);
+        setErrorMessage('');
+
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            try {
+                const content = e.target.result;
+                let data = [];
+
+                if (file.name.endsWith('.json')) {
+                    data = JSON.parse(content);
+                } else if (file.name.endsWith('.csv')) {
+                    // Simple CSV parser
+                    const lines = content.split('\n');
+                    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+
+                    data = lines.slice(1).filter(line => line.trim()).map(line => {
+                        const values = line.split(',');
+                        const obj = {};
+                        headers.forEach((header, i) => {
+                            let value = values[i]?.trim();
+                            // Convert numeric strings to numbers
+                            if (!isNaN(value) && value !== '') {
+                                value = Number(value);
+                            }
+                            obj[header] = value;
+                        });
+                        return obj;
+                    });
+                }
+
+                // Basic validation: check if it has required fields
+                if (data.length > 0 && (data[0].country || data[0].co2_emission)) {
+                    setTimeout(() => {
+                        setStatus('success');
+                        if (onImport) onImport(data);
+
+                        setTimeout(() => {
+                            setStatus('idle');
+                            onClose();
+                        }, 1500);
+                    }, 1000);
+                } else {
+                    throw new Error("Invalid format. Ensure your file has 'country' and 'co2_emission' columns.");
+                }
+            } catch (err) {
+                console.error("Import error:", err);
+                setErrorMessage(err.message || "Failed to parse file.");
+                setStatus('error');
+            }
+        };
+
+        reader.onerror = () => {
+            setErrorMessage("Failed to read file.");
+            setStatus('error');
+        };
+
+        reader.readAsText(file);
     };
 
     const triggerFilePicker = () => {
@@ -108,6 +157,21 @@ const ImportModal = ({ isOpen, onClose }) => {
                         </div>
                         <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#0f172a' }}>Import Successful!</h3>
                         <p style={{ color: '#64748b' }}>Your dashboard has been updated.</p>
+                    </div>
+                )}
+
+                {status === 'error' && (
+                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                        <div style={{
+                            color: '#ef4444', fontSize: '5rem', marginBottom: '1rem'
+                        }}>
+                            <IoClose />
+                        </div>
+                        <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#0f172a' }}>Import Failed</h3>
+                        <p style={{ color: '#ef4444', marginBottom: '2rem' }}>{errorMessage}</p>
+                        <button className="btn btn-primary" onClick={() => setStatus('idle')}>
+                            Try Again
+                        </button>
                     </div>
                 )}
 
