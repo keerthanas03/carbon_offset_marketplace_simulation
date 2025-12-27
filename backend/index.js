@@ -44,9 +44,9 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// We use 2.5-flash as it was confirmed working with current quota
+// We use 1.5-flash as it is the stable fast model
 const geminiModel = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash"
+    model: "gemini-1.5-flash"
 });
 
 // ===============================
