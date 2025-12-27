@@ -51,6 +51,9 @@ const Navbar = () => {
                     <Link to="/calculator" style={navItemStyle('/calculator')}>
                         <IoCalculatorOutline /> Calculator
                     </Link>
+                    <Link to="/eco-credits" style={navItemStyle('/eco-credits')}>
+                        <IoLeafOutline /> EcoCredits
+                    </Link>
                     <Link to="/fun-zone" style={navItemStyle('/fun-zone')}>
                         <IoSparklesOutline /> Playground
                     </Link>

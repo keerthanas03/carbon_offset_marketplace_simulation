@@ -186,6 +186,195 @@ User question: ${message}
 });
 
 // ===============================
+// EcoCredit AI Routes
+// ===============================
+
+// Get or Create Simulation User
+async function getSimulationUser() {
+    console.log("🔍 Fetching user...");
+    let { data: user, error } = await supabase
+        .from("eco_users")
+        .select("*")
+        .eq("name", "Eco Warrior")
+        .single();
+
+    if (error || !user) {
+        const { data: newUser, error: createError } = await supabase
+            .from("eco_users")
+            .insert([{ name: "Eco Warrior", carbon_score: 0, eco_credits: 0, badge: "Bronze" }])
+            .select()
+            .single();
+        if (createError) throw createError;
+
+        // Also create wallet
+        await supabase.from("eco_wallet").insert([{ user_id: newUser.id, balance: 0 }]);
+        return newUser;
+    }
+    return user;
+}
+
+// Get User Stats
+app.get("/api/eco/user-stats", async (req, res) => {
+    try {
+        const user = await getSimulationUser();
+        res.json(user);
+    } catch (err) {
+        console.error("User Stats Error:", err.message);
+        res.status(500).json({ error: "Failed to fetch user stats" });
+    }
+});
+
+// Calculate Carbon Footprint
+app.post("/api/eco/calculate-footprint", async (req, res) => {
+    try {
+        const { travel, electricity, diet, plastic, ac } = req.body;
+        const user = await getSimulationUser();
+
+        const prompt = `
+You are an eco-coach AI. Calculate the daily carbon footprint in kg CO2 and a Carbon Score (0-100, where 100 is most sustainable/lowest footprint) based on:
+- Daily travel distance: ${travel} km
+- Electricity units: ${electricity} kWh
+- Diet: ${diet}
+- Plastic usage: ${plastic}
+- AC usage: ${ac} hours
+
+Respond ONLY with a JSON object:
+{
+  "footprint_kg": number,
+  "carbon_score": number,
+  "analysis": "string"
+}
+`;
+
+        const result = await geminiModel.generateContent(prompt);
+        const responseText = result.response.text();
+        const cleanJson = responseText.replace(/```json|```/g, "").trim();
+        const data = JSON.parse(cleanJson);
+
+        // Update User
+        const { error: updateError } = await supabase
+            .from("eco_users")
+            .update({ carbon_score: data.carbon_score })
+            .eq("id", user.id);
+
+        if (updateError) throw updateError;
+
+        // Log calculation
+        await supabase.from("eco_logs").insert([{
+            user_id: user.id,
+            footprint: { travel, electricity, diet, plastic, ac },
+            score: data.carbon_score
+        }]);
+
+        res.json(data);
+    } catch (err) {
+        console.error("Calculate Error:", err.message);
+        res.status(500).json({ error: "Failed to calculate footprint" });
+    }
+});
+
+// Green Coach - Suggest Actions
+app.get("/api/eco/coach-actions", async (req, res) => {
+    try {
+        const user = await getSimulationUser();
+
+        const prompt = `
+You are an eco-coach AI. Suggest 3 daily green actions for a user with Carbon Score ${user.carbon_score}.
+For each action, predict carbon saved (kg) and assign eco credits (5-50).
+Motivate the user.
+
+Respond ONLY with a JSON array of objects:
+[
+  { "action": "string", "carbon_saved": number, "credits": number, "motivation": "string" },
+  ...
+]
+`;
+
+        const result = await geminiModel.generateContent(prompt);
+        const responseText = result.response.text();
+
+        // Robust JSON extraction
+        let cleanJson = responseText;
+        if (responseText.includes('[')) {
+            const start = responseText.indexOf('[');
+            const end = responseText.lastIndexOf(']') + 1;
+            cleanJson = responseText.substring(start, end);
+        }
+
+        const actions = JSON.parse(cleanJson);
+        res.json(actions);
+    } catch (err) {
+        console.error("Coach Error:", err.message);
+        res.status(500).json({ error: `AI Error: ${err.message}` });
+    }
+});
+
+// Confirm Action & Reward Credits
+app.post("/api/eco/confirm-action", async (req, res) => {
+    try {
+        const { action, credits } = req.body;
+        const user = await getSimulationUser();
+
+        const newCredits = (user.eco_credits || 0) + Number(credits);
+
+        // Badge Logic
+        let badge = "Bronze";
+        if (newCredits > 700) badge = "Platinum";
+        else if (newCredits > 300) badge = "Gold";
+        else if (newCredits > 100) badge = "Silver";
+
+        const { error: updateError } = await supabase
+            .from("eco_users")
+            .update({ eco_credits: newCredits, badge })
+            .eq("id", user.id);
+
+        if (updateError) throw updateError;
+
+        // Update Wallet
+        await supabase.rpc('increment_wallet', { user_id_val: user.id, amount: Number(credits) });
+        // Note: If RPC not available, we can do a normal update. 
+        // Let's do a normal update for simplicity if we don't want to define RPC.
+        const { data: wallet } = await supabase.from("eco_wallet").select("balance").eq("user_id", user.id).single();
+        await supabase.from("eco_wallet").update({ balance: (wallet?.balance || 0) + Number(credits) }).eq("user_id", user.id);
+
+        res.json({ success: true, newCredits, badge });
+    } catch (err) {
+        console.error("Confirm Action Error:", err.message);
+        res.status(500).json({ error: "Failed to confirm action" });
+    }
+});
+
+// Auto Invest Recommendations
+app.get("/api/eco/auto-invest", async (req, res) => {
+    try {
+        const user = await getSimulationUser();
+
+        // Fetch projects
+        const { data: projects } = await supabase.from("country_emissions").select("*").neq("project_type", null);
+
+        const prompt = `
+Recommend the best carbon offset projects for a user with:
+- Carbon Score: ${user.carbon_score}
+- Eco Credits: ${user.eco_credits}
+
+Available Projects: ${JSON.stringify(projects)}
+
+Respond ONLY with a JSON array of 2 recommended project objects from the list, adding a "reason" field for each.
+`;
+
+        const result = await geminiModel.generateContent(prompt);
+        const responseText = result.response.text();
+        const cleanJson = responseText.replace(/```json|```/g, "").trim();
+        const recommendations = JSON.parse(cleanJson);
+
+        res.json(recommendations);
+    } catch (err) {
+        console.error("Auto Invest Error:", err.message);
+        res.status(500).json({ error: "Failed to get investment recommendations" });
+    }
+});
+
+// ===============================
 // Start Server
 // ===============================
 app.listen(PORT, () => {

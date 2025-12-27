@@ -7,6 +7,7 @@ import Marketplace from './pages/Marketplace';
 
 import FunZone from './pages/FunZone';
 import Calculator from './pages/Calculator';
+import EcoCredits from './pages/EcoCredits';
 import ChatAssistant from './components/ChatAssistant';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/fun-zone" element={<FunZone />} />
             <Route path="/calculator" element={<Calculator />} />
+            <Route path="/eco-credits" element={<EcoCredits />} />
           </Routes>
         </div>
         <ChatAssistant />
