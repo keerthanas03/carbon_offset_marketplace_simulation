@@ -1,9 +1,13 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const getBaseURL = () => {
+    let url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    url = url.replace(/\/$/, '');
+    return url.endsWith('/api') ? url : `${url}/api`;
+};
 
 const api = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: getBaseURL(),
 });
 
 export const ecoService = {
