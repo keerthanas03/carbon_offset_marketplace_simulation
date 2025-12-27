@@ -50,7 +50,7 @@ const EcoCredits = () => {
         <div style={{ maxWidth: '1200px', margin: '2rem auto', padding: '0 20px' }}>
             {/* Header */}
             <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-                <h1 className="text-gradient" style={{ fontSize: '3rem', fontWeight: '850', marginBottom: '10px' }}>
+                <h1 className="text-gradient eco-title" style={{ fontWeight: '850', marginBottom: '10px' }}>
                     EcoCredit AI
                 </h1>
                 <p style={{ color: '#64748b', fontSize: '1.2rem' }}>
@@ -59,14 +59,15 @@ const EcoCredits = () => {
             </div>
 
             {/* Navigation Tabs */}
-            <div className="glass" style={{
+            <div className="glass eco-tabs-nav" style={{
                 display: 'flex',
                 gap: '10px',
                 padding: '10px',
                 borderRadius: '16px',
                 marginBottom: '2rem',
                 justifyContent: 'center',
-                overflowX: 'auto'
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch'
             }}>
                 <TabButton id="dashboard" icon={IoPulse} label="Dashboard" />
                 <TabButton id="calculator" icon={IoLeaf} label="Calculator" />

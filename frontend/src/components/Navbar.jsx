@@ -38,7 +38,7 @@ const Navbar = () => {
                     <span>EcoRoute</span>
                 </Link>
 
-                <div style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.35rem', borderRadius: '99px' }}>
+                <div className="nav-links-container" style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.35rem', borderRadius: '99px' }}>
                     <Link to="/" style={navItemStyle('/')}>
                         <IoHomeOutline /> Home
                     </Link>
