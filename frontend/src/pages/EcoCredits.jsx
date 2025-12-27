@@ -91,7 +91,7 @@ const EcoCredits = () => {
 // --- Sub-views ---
 
 const DashboardView = ({ userStats }) => {
-    if (!userStats) return <div>Loading...</div>;
+    if (!userStats) return <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Loading dashboard data...</div>;
 
     const badgeColors = {
         'Bronze': '#cd7f32',
@@ -153,7 +153,11 @@ const CalculatorView = ({ onCalculated }) => {
         <div style={{ maxWidth: '850px', margin: '0 auto' }} className="section-reveal">
             <div className="glass-card" style={{ padding: '3rem' }}>
                 <h2 style={{ marginBottom: '2.5rem', textAlign: 'center', fontSize: '2.5rem' }}>AI Carbon Analysis</h2>
-                <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                <form onSubmit={handleSubmit} style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gap: '2rem'
+                }}>
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>Daily Travel (km)</label>
                         <input
@@ -377,7 +381,7 @@ const InvestView = ({ userStats }) => {
                 <h2 style={{ color: '#1e293b' }}>AI Project Recommendations</h2>
                 <p style={{ color: '#64748b' }}>Based on your footprint and credits, AI recommends investing in these projects.</p>
             </div>
-            {loading ? <div style={{ textAlign: 'center' }}>AI is analyzingmarketplace...</div> : (
+            {loading ? <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>AI is analyzing marketplace...</div> : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
                     {recommendations.map((proj, i) => (
                         <div key={i} className="glass" style={{ padding: '30px', borderRadius: '24px' }}>
