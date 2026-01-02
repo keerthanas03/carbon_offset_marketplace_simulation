@@ -86,11 +86,16 @@ const ChatAssistant = () => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.8, y: 100 }}
                         style={{
-                            width: '400px', height: '600px', background: 'white',
+                            width: 'min(90vw, 400px)',
+                            height: 'min(80vh, 600px)',
+                            background: 'white',
                             borderRadius: '24px', overflow: 'hidden',
                             boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
                             display: 'flex', flexDirection: 'column',
-                            border: '1px solid #e2e8f0'
+                            border: '1px solid #e2e8f0',
+                            position: 'fixed',
+                            bottom: 'min(2rem, 5vh)',
+                            right: 'min(2rem, 5vw)',
                         }}
                     >
                         {/* Header */}

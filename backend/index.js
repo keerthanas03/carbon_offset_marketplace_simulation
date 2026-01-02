@@ -44,10 +44,47 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// We use 1.5-flash as it is the stable fast model
-const geminiModel = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash"
-});
+// Robust model selection with fallback logic
+async function safeGenerateContent(prompt) {
+    // Current environment seems to have Gemini 2.x and 2.5 models
+    const models = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-2.5-pro",
+        "gemini-3-pro-preview",
+        "gemini-1.5-flash-latest",
+        "gemini-pro"
+    ];
+    let lastError = null;
+
+    for (const modelName of models) {
+        try {
+            console.log(`🤖 Attempting AI with model: ${modelName}`);
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const result = await model.generateContent(prompt);
+            const text = result.response.text();
+            console.log(`✅ Success with model: ${modelName}`);
+            return text;
+        } catch (err) {
+            console.error(`❌ Model ${modelName} failed:`, err.message);
+            lastError = err;
+
+            // Check for critical errors that won't be fixed by changing models
+            if (err.message.includes("API key not valid") || err.message.includes("API_KEY_INVALID")) {
+                console.error("🔑 API Key Issue detected!");
+                throw new Error("Invalid API key. Please check your GEMINI_API_KEY in .env");
+            }
+
+            // Continue to next model
+            continue;
+        }
+    }
+
+    // If we get here, all models failed
+    const errorMsg = lastError?.message || "Unknown AI error";
+    console.error(`💀 All Gemini models failed. Last error: ${errorMsg}`);
+    throw new Error(`All AI models failed. Last error: ${errorMsg}`);
+}
 
 // ===============================
 // Routes
@@ -167,9 +204,7 @@ Focus only on sustainability, emissions, and carbon offset topics.
 User question: ${message}
 `;
 
-        const result = await geminiModel.generateContent(prompt);
-        const reply = result.response.text();
-
+        const reply = await safeGenerateContent(prompt);
         res.json({ reply });
     } catch (err) {
         console.error("Gemini Error:", err.message);
@@ -246,8 +281,7 @@ Respond ONLY with a JSON object:
 }
 `;
 
-        const result = await geminiModel.generateContent(prompt);
-        const responseText = result.response.text();
+        const responseText = await safeGenerateContent(prompt);
         const cleanJson = responseText.replace(/```json|```/g, "").trim();
         const data = JSON.parse(cleanJson);
 
@@ -290,8 +324,7 @@ Respond ONLY with a JSON array of objects:
 ]
 `;
 
-        const result = await geminiModel.generateContent(prompt);
-        const responseText = result.response.text();
+        const responseText = await safeGenerateContent(prompt);
 
         // Robust JSON extraction
         let cleanJson = responseText;
@@ -362,8 +395,7 @@ Available Projects: ${JSON.stringify(projects)}
 Respond ONLY with a JSON array of 2 recommended project objects from the list, adding a "reason" field for each.
 `;
 
-        const result = await geminiModel.generateContent(prompt);
-        const responseText = result.response.text();
+        const responseText = await safeGenerateContent(prompt);
         const cleanJson = responseText.replace(/```json|```/g, "").trim();
         const recommendations = JSON.parse(cleanJson);
 
